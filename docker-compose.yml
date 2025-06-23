@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  back:
+    build: ./back
+    container_name: back      
+    restart: unless-stopped
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.back.rule=Host(`api.thomaspiet.store`)"
+      - "traefik.http.routers.back.entrypoints=websecure"
+      - "traefik.http.routers.back.tls.certresolver=myresolver"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+  front:
+    build: ./front
+    container_name: front
+    restart: unless-stopped
+    networks:
+      - traefik
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.front.rule=Host(`frontapi.thomaspiet.store`)"
+      - "traefik.http.routers.front.entrypoints=websecure"
+      - "traefik.http.routers.front.tls.certresolver=myresolver"
+      - "com.centurylinklabs.watchtower.enable=true"
+
+networks:
+  traefik:
+    external: true

@@ -37,7 +37,7 @@ jobs:
         with:
           context: ./back
           push: true
-          tags: ghcr.io/${{ secrets.GHCR_USERNAME }}/mon-projet:back-latest
+          tags: ghcr.io/${{ secrets.GHCR_USERNAME }}/devops-tp:back-latest
 
   frontend:
     name: Build frontend (if backend ok)
@@ -59,4 +59,4 @@ jobs:
         with:
           context: ./front
           push: true
-          tags: ghcr.io/${{ secrets.GHCR_USERNAME }}/mon-projet:front-latest
+          tags: ghcr.io/${{ secrets.GHCR_USERNAME }}/devops-tp:front-latest

@@ -18,7 +18,7 @@ jobs:
           node-version: 20
 
       - name: Install deps
-        run: cd back && npm ci
+        run: cd back && npm i
 
       - name: Run tests
         run: cd back && npm test

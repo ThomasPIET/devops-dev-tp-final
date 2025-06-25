@@ -10,7 +10,7 @@
         <label>Password:</label>
         <input type="password" v-model="password" required>
       </div>
-      <button type="submit">Login edit</button>
+      <button type="submit">Login</button>
       <p>
         Don't have an account? 
         <router-link to="/register">Register</router-link>

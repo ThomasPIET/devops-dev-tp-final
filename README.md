@@ -1,62 +1,132 @@
-# Store application
+# Documentation de déploiement – Projet Front + Back
 
-## Project Overview
-This project contains the source code of store application.
+## 1. Architecture du projet
 
-On the `back` folder, you will find the source code of the API, developed with express and node.
-On the `front` folder, you will find the source code of the front-end application, developed with Vue3.
+Le projet est un monorepo avec deux sous-dossiers:
 
-## Installation
-
-1. Clone the repository
-2. Install the dependencies on each subfolder (back and front)
-3. Create a `.env` file on the `back` folder with the following content:
 ```
-DATABASE_URL=file:./file.db
-JWT_SECRET=your_secret
-BCRYPT_SALT_ROUNDS=10
+repo/
+├── back/        
+├── front/     
+├── .github/workflows/deploy.yml
 ```
 
-### Run the back
-1. Go to the `back` folder
-2. Run the following command:
+## 2. Objectif
+
+Déploiement automatique sur un VPS via Docker, avec:
+
+* Traefik pour le reverse proxy et HTTPS
+* Watchtower pour les mises à jour automatiques
+* GitHub Actions pour CI/CD et publication sur GHCR
+
+---
+
+## 3. Structure des dossiers sur le VPS
+
+```
+/
+├── traefik/
+│   ├── docker-compose.yml
+│   └── letsencrypt/acme.json
+│
+├── watchtower/
+│   └── docker-compose.yml
+│
+├── mon-projet/
+│   └── docker-compose.prod.yml
+```
+
+---
+
+## 4. Contenu des fichiers Docker importants
+
+Contenu de `mon-projet/docker-compose.prod.yml` :
+
+
+
+* `back` tiré de GHCR, exposé sur `api.thomaspiet.store`
+* `front` tiré de GHCR, exposé sur `frontapi.thomaspiet.store`
+
+Chaque service:
+
+* utilise `restart: unless-stopped`
+* est relié au réseau `traefik`
+* a les labels Traefik
+* est surveillé par Watchtower
+
+
+---
+
+## 5. Traefik
+
+Contenu du `docker-compose.yml` dans `/traefik/`:
+
+* écoute sur ports 80/443
+* génère les certificats Let's Encrypt
+* expose le dashboard sur `traefik.thomaspiet.store`
+
+---
+
+## 6. Watchtower
+
+Contenu du `docker-compose.yml` dans `/watchtower/`:
+
+```yaml
+command:
+  - --interval=86400
+  - --cleanup
+  - --label-enable
+  - --log-level=info
+```
+
+Surveille les images `ghcr.io/...` toutes les 24h et supprime les anciennes versions après avoir mis à jour.
+
+---
+
+## 7. GitHub Actions
+
+Fichier `.github/workflows/deploy.yml`:
+
+* Job 1: teste le backend
+* Job 2: si succès, build + push `back-latest`
+* Job 3: ensuite, build + push `front-latest`
+
+### Secrets à ajouter dans GitHub :
+
+| Nom             | Valeur                                             |
+| --------------- | -------------------------------------------------- |
+| `GHCR_USERNAME` | `thomaspiet`                                       |
+| `GHCR_TOKEN`    | Token GitHub (classic) avec scope `write:packages` |      
+
+---
+
+## 8. GHCR (GitHub Container Registry)
+
+Les images sont publiées sous :
+
+```
+$ docker pull ghcr.io/thomaspiet/devops-tp:back-latest
+$ docker pull ghcr.io/thomaspiet/devops-tp:front-latest
+```
+
+> ⚠️ Rendre les packages publics via l'interface GitHub si le VPS n’est pas authentifié. (Je ne le recommande pas) 
+
+---
+
+## 9. Déploiement
+
+### Première fois:
+
 ```bash
-npx prisma generate dev
-npm run start
+mkdir -p /mon-projet
+cd /mon-projet
+nano docker-compose.prod.yml
+docker compose -f docker-compose.prod.yml up -d
 ```
-3. API is exposed on `http://localhost:3000`
 
-#### Run the tests
-1. Go to the `back` folder
-2. Run the following command:
+### Authentifier le VPS à GHCR (si images privées) :
+
 ```bash
-npm run test
+echo <TON_GHCR_TOKEN> | docker login ghcr.io -u thomaspiet --password-stdin
 ```
 
-### Run the front
-1. Go to the `front` folder
-2. Make sure the .env file contains the good URL for the API
-```bash
-VITE_API_URL=http://localhost:3000
-```
-3. Run with the following command:
-```bash
-npm run dev
-```
-
-### Postman collection
-
-A postman collection is available under the `docs` folder. You can import it directly on Postman to use it.
-
-## Contributing
-1. Fork the repository
-2. Create a new branch (`git checkout -b feature-branch`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature-branch`)
-5. Create a new Pull Request
-
-## License
-This project is licensed under the MIT License.
-
-## Contact
-For any inquiries, please contact [quentin.desbin@ynov.com](mailto:quentin.desbin@ynov.com).
